@@ -9,14 +9,16 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Author: shaco
  * Date: 2023/5/27
- * Desc: 消费者消费数据
+ * Desc: 指定offset进行数据消费
  */
-public class Demo04_PollMessage {
+public class Demo06_AssignOffset {
     public static void main(String[] args) {
         // 0、消费者配置
         Properties prop = new Properties();
@@ -40,11 +42,20 @@ public class Demo04_PollMessage {
         subscribeTopics.add("first");
         kafkaConsumer.subscribe(subscribeTopics);
 
-        // TODO 2、订阅某个主题或某几个主题的指定的分区
-        // 订阅first主题的0号分区
-        // ArrayList<TopicPartition> topicCollections = new ArrayList<>();
-        // topicCollections.add(new TopicPartition("first",0));
-        // kafkaConsumer.assign(topicCollections);
+        // TODO 指定offset进行数据消费
+        // 创建一个集合用来存储消费者消费的分区
+        Set<TopicPartition> topicPartitions = new HashSet<>();
+
+        // 由于消费者组初始化流程较为繁复，有可能代码执行到这里，Kafka集群中，消费者组还没有初始化完成，消费者分区分配策略还没能执行完成，所以需要进行逻辑判断
+        while (topicPartitions.size() == 0){
+            // 如果不能获取到消费者所消费的分区，那么一直进分区获取，并判断
+            topicPartitions = kafkaConsumer.assignment();
+        }
+
+        // 为每个分区指定offset的消费位置，每个分区都从100的位置开始消费
+        for (TopicPartition topicPartition : topicPartitions) {
+            kafkaConsumer.seek(topicPartition, 100);
+        }
 
         // 3、消费数据：当消费到"stop"时，停止消费
         boolean isflag = true;

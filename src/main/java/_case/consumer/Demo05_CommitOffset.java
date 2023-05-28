@@ -4,9 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -14,9 +12,9 @@ import java.util.Properties;
 /**
  * Author: shaco
  * Date: 2023/5/27
- * Desc: 消费者消费数据
+ * Desc: 手动提交offset，自动提交offset
  */
-public class Demo04_PollMessage {
+public class Demo05_CommitOffset {
     public static void main(String[] args) {
         // 0、消费者配置
         Properties prop = new Properties();
@@ -31,6 +29,9 @@ public class Demo04_PollMessage {
         // TODO 配置消费者组名，必选项
         prop.put(ConsumerConfig.GROUP_ID_CONFIG,"test");
 
+        // TODO 设置手动提交offset，每消费一批数据，提交一次offset。默认值是true，表示自动提交offset
+        prop.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,"false");
+
         // 1、创建一个消费者
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(prop);
 
@@ -39,12 +40,6 @@ public class Demo04_PollMessage {
         ArrayList<String> subscribeTopics = new ArrayList<>();
         subscribeTopics.add("first");
         kafkaConsumer.subscribe(subscribeTopics);
-
-        // TODO 2、订阅某个主题或某几个主题的指定的分区
-        // 订阅first主题的0号分区
-        // ArrayList<TopicPartition> topicCollections = new ArrayList<>();
-        // topicCollections.add(new TopicPartition("first",0));
-        // kafkaConsumer.assign(topicCollections);
 
         // 3、消费数据：当消费到"stop"时，停止消费
         boolean isflag = true;
@@ -61,6 +56,12 @@ public class Demo04_PollMessage {
 
                 System.out.println(consumerRecord);
             }
+
+            // TODO 手动提交offset
+            // 异步提交offset
+            kafkaConsumer.commitAsync();
+            // 同步提交offset
+            // kafkaConsumer.commitSync();
         }
     }
 }
